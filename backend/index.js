@@ -171,7 +171,7 @@ app.delete('/api/v1/boards/:boardId/', function(req, res) {
     const boardId = req.params.boardId;
     const boardIndex = boards.findIndex(item => item.id === boardId);
     if(boardIndex > -1){
-        const allTasksNotArchived = boards[boardIndex].tasks.some(id => tasks[id].archived === false);
+        const allTasksNotArchived = boards[boardIndex].tasks.some(id => tasks && tasks[id] && tasks[id].archived === false);
         if(!allTasksNotArchived){
             boards.splice(boardIndex, 1);
             return res.status(200).send(boards);
@@ -272,29 +272,19 @@ app.delete('/api/v1/boards/:boardId/tasks/:taskId', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
 
-    let i;
-    let j;
-    for (i=0; i<boards.length; i++) {
-        if (boardId === boards[i].id) {
-            for (j=0; j<boards[i].tasks.length; j++) {
-                if (taskId === boards[i].tasks[j]) {
-                    boards[i].tasks = boards[i].tasks.splice(j,1);
-                    //archiving in tasks
-                    let k;
-                    for (k=0; k<tasks.length; k++) {
-                        if (taskId === tasks[k].id) {
-                            tasks[k].archived = true;
-                            return res.status(200).send(tasks[k])
-                        }
-                    }
-
-                }
-            }
-        }
+    const boardIndex = boards.findIndex(item => item.id === boardId);
+    if(boardIndex === -1){
+        return res.status(400).send('The board was not found')
     }
-    return res.status(404).send('The boardId or the taskId were not found.')
-
-
+    const taskIndex = tasks.findIndex(item => item.id === taskId);
+    if(taskIndex === -1){
+        return res.status(400).send('The task was not found')
+    }
+    const deletedTask = tasks[taskIndex];
+    boards[boardIndex].tasks.splice(taskId,1);
+    tasks.splice(taskIndex,1);
+    res.status(200).send(deletedTask);
+    
 })
 
 // update task
@@ -308,40 +298,38 @@ app.patch('/api/v1/boards/:boardId/tasks/:taskId/', function (req, res) {
     let taskBoardId = req.body.boardId;
     let archived = req.body.archived;
 
-    let i;
-    let j;
-    for (i=0; i<boards.length; i++) {
-        if (boardId === boards[i].id) {
-            for (j=0; j<boards[i].tasks.length; j++) {
-                if (taskId === boards[i].tasks[j]) {
-
-                    if (taskName === undefined) {
-                        taskName = tasks[boards[i].tasks[j]].taskName;
-                    }
-                    if (taskBoardId === undefined) {
-                        taskBoardId = tasks[boards[i].tasks[j]].boardId;
-                    }
-                    if (archived === undefined) {
-                        archived = tasks[boards[i].tasks[j]].archived;
-                    }
-
-                    const resJson = {
-                        id: boards[i].tasks[j],
-                        boardId: taskBoardId,
-                        taskName: taskName,
-                        dateCreated: tasks[boards[i].tasks[j]].dateCreated,
-                        archived: archived
-                    };
-
-                    tasks.splice(j,1);
-                    tasks.push(resJson);
-                    return res.sendStatus(200);
-                }
-            } 
-            return res.status.send('taskId '+ taskId +' not found.') ;
-        }
+    const boardIndex = boards.findIndex(item => item.id === boardId);
+    if(boardIndex === -1){
+        return res.status(400).send('The board was not found')
     }
-    return res.status(404).send('boardId '+ boardId +' not found');
+
+    const taskIndex = tasks.findIndex(item => item.id === taskId);
+    if(taskIndex === -1){
+        return res.status(400).send('The task was not found')
+    }
+
+     if(typeof taskName === "string"){
+        tasks[taskIndex].taskName = taskName
+    }
+    if(typeof taskBoardId === "string"){
+        const newBoardIndex = boards.findIndex(item => item.id === taskBoardId.toString());
+        if(newBoardIndex === -1 && taskBoardId){
+            return res.status(400).send('The destination board was not found')
+        }
+        tasks[taskIndex].boardId = taskBoardId.toString()
+        
+        //remove task from current board
+        boards[boardIndex].tasks = boards[boardIndex].tasks.filter(s => s !== taskId);
+        
+        // add task to new board
+        boards[newBoardIndex].tasks.push(taskId);
+    }
+    if(typeof archived === "boolean" ){
+        tasks[taskIndex].archived = archived
+    } 
+
+    const returnedTask = tasks.findIndex(item => item.id === taskId)
+    res.status(200).send(tasks[returnedTask]);
 })
 
 //Start the server
