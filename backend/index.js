@@ -202,6 +202,7 @@ app.get('/boards/:boardId/tasks/', function(req, res) {
     return res.status(200).send(resArray)
 })
 
+//get task from a specific board.
 app.get('/boards/:boardId/tasks/:taskId/', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
