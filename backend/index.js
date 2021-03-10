@@ -113,7 +113,7 @@ app.post('/boards/', async(req, res) => {
     
 })
 
-//update a board
+//TODO update a board
 app.post('/boards/:boardId/', function(req, res) {
     let boardId = req.params.boardId;
     
@@ -133,7 +133,7 @@ app.post('/boards/:boardId/', function(req, res) {
     }
 })
 
-//delete a specific board
+// TODO delete a specific board
 app.delete('/boards/:boardId/', function(req, res) {
     res.status(200);
 })
@@ -193,15 +193,17 @@ app.get('/boards/:boardId/tasks/:taskId/', function(req, res) {
     
 })
 
+//TODO post tasks
 app.post('/boards/:boardId/tasks/', function(req, res) {
     res.status(200);
 })
 
+//TODO delete task
 app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
     res.status(200);
 })
 
-//TODO add update
+//TODO add update task
 
 //Start the server
 app.listen(port, () => {
