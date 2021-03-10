@@ -35,8 +35,28 @@ var tasks = [
 ];
 
 //TODO correct this
-var boardCount = boards.length+1;
-var taskCount = tasks.length;
+function countBoards() {
+    let max = 0;
+    for (let i=0;i<boards.length; i++) {
+        if (max < parseInt(boards[i].id)) {
+            max = parseInt(boards[i].id);
+        }
+    }
+    return max+1;
+}
+
+function countTasks() {
+    let max = 0;
+    for (let i=0;i<tasks.length; i++) {
+        if (max < parseInt(tasks[i].id)) {
+            max = parseInt(tasks[i].id);
+        }
+    }
+    return max+1;
+}
+
+var boardCount = countBoards();
+var taskCount = countTasks();
 
 //Your endpoints go here
 
@@ -193,14 +213,67 @@ app.get('/boards/:boardId/tasks/:taskId/', function(req, res) {
     
 })
 
-//TODO post tasks
-app.post('/boards/:boardId/tasks/', function(req, res) {
-    res.status(200);
+//post new tasks
+app.post('/boards/:boardId/tasks/', async(req, res) => {
+    let boardId = req.params.boardId;
+    const taskName = await req.body.taskName
+
+    let i;
+    for (i=0; i<boards.length; i++) {
+        if (boards[i].id === boardId) {
+            var aDate = new Date()
+            let today = new Date(Date.UTC(aDate.getFullYear(), aDate.getMonth(), aDate.getDate(), aDate.getHours(), aDate.getMinutes(), aDate.getSeconds()));
+
+            let resJson = {
+                id: taskCount.toString(),
+                boardId: boardId,
+                taskName: taskName,
+                dateCreated: today,
+                archived: false
+            }
+            boards[i].tasks.push(resJson.id);
+            tasks.push(resJson);
+            taskCount++;
+            console.log(boards[i].tasks);
+            console.log(tasks);
+            return res.sendStatus(200);
+        }
+    }
+    return res.status(405).send('Bad Action');
 })
 
-//TODO delete task
+//delete task
 app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
-    res.status(200);
+    let boardId = req.params.boardId;
+    let taskId = req.params.taskId;
+
+    let i;
+    let j;
+    for (i=0; i<boards.length; i++) {
+        console.log(typeof(boardId));
+        console.log(typeof(boards[i].id));
+        if (boardId === boards[i].id) {
+            for (j=0; j<boards[i].tasks.length; j++) {
+                if (taskId === boards[i].tasks[j]) {
+                    boards[i].tasks = boards[i].tasks.splice(j,j);
+                    console.log("board tasks"+boards[i].tasks);
+
+                    //archiving in tasks
+                    let k;
+                    for (k=0; k<tasks.length; k++) {
+                        if (taskId === tasks[k].id) {
+                            tasks[k].archived = true;
+                            console.log("tasks " + tasks);
+                            return res.status(200).send(tasks[k])
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+    return res.status(404).send('The boardId or the taskId were not found.')
+
 })
 
 //TODO add update task
