@@ -34,9 +34,29 @@ var tasks = [
     { id: '3', boardId: '3', taskName: "Prepare assignment 2", dateCreated: new Date(Date.UTC(2021, 00, 10, 16, 00)), archived: true }
 ];
 
-//TODO correct this
-var boardCount = boards.length+1;
-var taskCount = tasks.length;
+//These functions ensure that the ids will be unique.
+function countBoards() {
+    let max = 0;
+    for (let i=0;i<boards.length; i++) {
+        if (max < parseInt(boards[i].id)) {
+            max = parseInt(boards[i].id);
+        }
+    }
+    return max+1;
+}
+
+function countTasks() {
+    let max = 0;
+    for (let i=0;i<tasks.length; i++) {
+        if (max < parseInt(tasks[i].id)) {
+            max = parseInt(tasks[i].id);
+        }
+    }
+    return max+1;
+}
+
+var boardCount = countBoards();
+var taskCount = countTasks();
 
 //Your endpoints go here
 
@@ -91,11 +111,12 @@ app.get('/api/v1/boards/:boardId/', function(req, res) {
 })
 
 //create a board
+
 app.post('/api/v1/boards/', async(req, res) => {
     const name = await req.body.name;
     const description = await req.body.description;
 
-    if (req.body.name !== '') {
+    if (req.body.name !== undefined) {
         let newBoard = {
             id: boardCount.toString(),
             name: name,
@@ -113,23 +134,36 @@ app.post('/api/v1/boards/', async(req, res) => {
     
 })
 
-//TODO update a board
-app.post('/api/v1/boards/:boardId/', function(req, res) {
-    let boardId = req.params.boardId;
-    
-    if (req.body.name !== '') {
-        let newBoard = {
-            id: boardCount,
-            name: req.body.name,
-            description: req.body.description,
-            tasks: []
-        }
-        boardCount++;
-        boards = {...boards, newBoard};
-        return res.status(200).send(newBoard);
 
+// update a board
+app.post('api/v1/boards/:boardId/', function(req, res) {
+    let boardId = req.params.boardId;
+
+    const name = req.body.name;
+    const description = req.body.description;
+    
+    if (name === undefined || description === undefined) {
+        return res.status(405).send('Name or description cannot be empty');
     }else {
-        return res.status(405).send('Name cannot be empty');
+        let i;
+        for (i=0; i<boards.length; i++) {
+            if (boards[i].id === boardId) {
+                if (boards[i].tasks.length === 0) {
+                    return res.status(405).send('The tasks associated to this board must be deleted first!');
+                }
+                
+                let updatedBoard = {
+                    id: boardId,
+                    name: req.body.name,
+                    description: req.body.description,
+                    tasks: boards[i].tasks
+                }
+                boards.splice(i, 1);
+                boards.push(updatedBoard);
+                return res.status(200).send(updatedBoard);
+            }
+        }
+        return res.status(404).send('Board '+ boardId +' not found.')
     }
 })
 
@@ -179,6 +213,7 @@ app.get('/api/v1/boards/:boardId/tasks/', function(req, res) {
     return res.status(200).send(resArray)
 })
 
+
 app.get('/api/v1/boards/:boardId/tasks/:taskId/', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
@@ -202,17 +237,118 @@ app.get('/api/v1/boards/:boardId/tasks/:taskId/', function(req, res) {
     
 })
 
-//TODO post tasks
-app.post('/api/v1/boards/:boardId/tasks/', function(req, res) {
-    res.status(200);
+
+//post new tasks
+app.post('/boards/:boardId/tasks/', async(req, res) => {
+    let boardId = req.params.boardId;
+    const taskName = await req.body.taskName
+
+    let i;
+    for (i=0; i<boards.length; i++) {
+        if (boards[i].id === boardId) {
+            var aDate = new Date()
+            let today = new Date(Date.UTC(aDate.getFullYear(), aDate.getMonth(), aDate.getDate(), aDate.getHours(), aDate.getMinutes(), aDate.getSeconds()));
+
+            let resJson = {
+                id: taskCount.toString(),
+                boardId: boardId,
+                taskName: taskName,
+                dateCreated: today,
+                archived: false
+            }
+            boards[i].tasks.push(resJson.id);
+            tasks.push(resJson);
+            taskCount++;
+            console.log(boards[i].tasks);
+            console.log(tasks);
+            return res.sendStatus(200);
+        }
+    }
+    return res.status(405).send('Bad Action');
 })
 
-//TODO delete task
-app.delete('/api/v1/boards/:boardId/tasks/:taskId', function(req, res) {
-    res.status(200);
+//delete task //TODO ask if delete or archive is enough
+app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
+    let boardId = req.params.boardId;
+    let taskId = req.params.taskId;
+
+    let i;
+    let j;
+    for (i=0; i<boards.length; i++) {
+        console.log(typeof(boardId));
+        console.log(typeof(boards[i].id));
+        if (boardId === boards[i].id) {
+            for (j=0; j<boards[i].tasks.length; j++) {
+                if (taskId === boards[i].tasks[j]) {
+                    boards[i].tasks = boards[i].tasks.splice(j,1);
+                    console.log("board tasks"+boards[i].tasks);
+
+                    //archiving in tasks
+                    let k;
+                    for (k=0; k<tasks.length; k++) {
+                        if (taskId === tasks[k].id) {
+                            tasks[k].archived = true;
+                            console.log("tasks " + tasks);
+                            return res.status(200).send(tasks[k])
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+    return res.status(404).send('The boardId or the taskId were not found.')
+
+
 })
 
-//TODO add update task
+// update task
+app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
+    //params
+    const boardId = req.params.boardId;
+    const taskId = req.params.taskId;
+
+    //body
+    let taskName = req.body.taskName;
+    let taskBoardId = req.body.boardId;
+    let archived = req.body.archived;
+
+    let i;
+    let j;
+    for (i=0; i<boards.length; i++) {
+        if (boardId === boards[i].id) {
+            for (j=0; j<boards[i].tasks.length; j++) {
+                if (taskId === boards[i].tasks[j]) {
+
+                    if (taskName === undefined) {
+                        taskName = tasks[boards[i].tasks[j]].taskName;
+                    }
+                    if (taskBoardId === undefined) {
+                        console.log("hola");
+                        taskBoardId = tasks[boards[i].tasks[j]].boardId;
+                    }
+                    if (archived === undefined) {
+                        archived = tasks[boards[i].tasks[j]].archived;
+                    }
+
+                    const resJson = {
+                        id: boards[i].tasks[j],
+                        boardId: taskBoardId,
+                        taskName: taskName,
+                        dateCreated: tasks[boards[i].tasks[j]].dateCreated,
+                        archived: archived
+                    };
+
+                    tasks.splice(j,1);
+                    tasks.push(resJson);
+                    return res.sendStatus(200);
+                }
+            } 
+            return res.status.send('taskId '+ taskId +' not found.') ;
+        }
+    }
+    return res.status(404).send('boardId '+ boardId +' not found');
+})
 
 //Start the server
 app.listen(port, () => {
