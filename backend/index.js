@@ -255,7 +255,7 @@ app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
         if (boardId === boards[i].id) {
             for (j=0; j<boards[i].tasks.length; j++) {
                 if (taskId === boards[i].tasks[j]) {
-                    boards[i].tasks = boards[i].tasks.splice(j,j);
+                    boards[i].tasks = boards[i].tasks.splice(j,1);
                     console.log("board tasks"+boards[i].tasks);
 
                     //archiving in tasks
@@ -277,6 +277,52 @@ app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
 })
 
 //TODO add update task
+app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
+    //params
+    const boardId = req.params.boardId;
+    const taskId = req.params.taskId;
+
+    //body
+    let taskName = req.body.taskName;
+    let taskBoardId = req.body.boardId;
+    let archived = req.body.archived;
+
+    let i;
+    let j;
+    for (i=0; i<boards.length; i++) {
+        if (boardId === boards[i].id) {
+            for (j=0; j<boards[i].tasks.length; j++) {
+                if (taskId === boards[i].tasks[j]) {
+
+                    if (taskName === undefined) {
+                        taskName = tasks[boards[i].tasks[j]].taskName;
+                    }
+                    if (taskBoardId === undefined) {
+                        console.log("hola");
+                        taskBoardId = tasks[boards[i].tasks[j]].boardId;
+                    }
+                    if (archived === undefined) {
+                        archived = tasks[boards[i].tasks[j]].archived;
+                    }
+
+                    const resJson = {
+                        id: boards[i].tasks[j],
+                        boardId: taskBoardId,
+                        taskName: taskName,
+                        dateCreated: tasks[boards[i].tasks[j]].dateCreated,
+                        archived: archived
+                    };
+                    
+                    tasks.splice(j,1);
+                    tasks.push(resJson);
+                    return res.sendStatus(200);
+                }
+            } 
+            return res.status.send('taskId '+ taskId +' not found.') ;
+        }
+    }
+    return res.status(404).send('boardId '+ boardId +' not found');
+})
 
 //Start the server
 app.listen(port, () => {
