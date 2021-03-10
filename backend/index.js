@@ -34,7 +34,7 @@ var tasks = [
     { id: '3', boardId: '3', taskName: "Prepare assignment 2", dateCreated: new Date(Date.UTC(2021, 00, 10, 16, 00)), archived: true }
 ];
 
-//TODO correct this
+//These functions ensure that the ids will be unique.
 function countBoards() {
     let max = 0;
     for (let i=0;i<boards.length; i++) {
@@ -111,11 +111,11 @@ app.get('/boards/:boardId/', function(req, res) {
 })
 
 //create a board
-app.post('/boards/', async(req, res) => {
-    const name = await req.body.name;
-    const description = await req.body.description;
+app.post('/boards/', function (req, res) {
+    const name = req.body.name;
+    const description = req.body.description;
 
-    if (req.body.name !== '') {
+    if (req.body.name !== undefined) {
         let newBoard = {
             id: boardCount.toString(),
             name: name,
@@ -288,7 +288,7 @@ app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
 
 })
 
-//TODO add update task
+// update task
 app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
     //params
     const boardId = req.params.boardId;
