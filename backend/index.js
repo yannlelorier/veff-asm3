@@ -133,23 +133,35 @@ app.post('/boards/', async(req, res) => {
     
 })
 
-//TODO update a board
+// update a board
 app.post('/boards/:boardId/', function(req, res) {
     let boardId = req.params.boardId;
-    
-    if (req.body.name !== '') {
-        let newBoard = {
-            id: boardCount,
-            name: req.body.name,
-            description: req.body.description,
-            tasks: []
-        }
-        boardCount++;
-        boards.push(boards);
-        return res.status(200).send(newBoard);
 
+    const name = req.body.name;
+    const description = req.body.description;
+    
+    if (name === undefined || description === undefined) {
+        return res.status(405).send('Name or description cannot be empty');
     }else {
-        return res.status(405).send('Name cannot be empty');
+        let i;
+        for (i=0; i<boards.length; i++) {
+            if (boards[i].id === boardId) {
+                if (boards[i].tasks.length === 0) {
+                    return res.status(405).send('The tasks associated to this board must be deleted first!');
+                }
+                
+                let updatedBoard = {
+                    id: boardId,
+                    name: req.body.name,
+                    description: req.body.description,
+                    tasks: boards[i].tasks
+                }
+                boards.splice(i, 1);
+                boards.push(updatedBoard);
+                return res.status(200).send(updatedBoard);
+            }
+        }
+        return res.status(404).send('Board '+ boardId +' not found.')
     }
 })
 
@@ -242,7 +254,7 @@ app.post('/boards/:boardId/tasks/', async(req, res) => {
     return res.status(405).send('Bad Action');
 })
 
-//delete task
+//delete task //TODO ask if delete or archive is enough
 app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
@@ -312,7 +324,7 @@ app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
                         dateCreated: tasks[boards[i].tasks[j]].dateCreated,
                         archived: archived
                     };
-                    
+
                     tasks.splice(j,1);
                     tasks.push(resJson);
                     return res.sendStatus(200);
