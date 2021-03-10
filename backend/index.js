@@ -125,8 +125,7 @@ app.post('/api/v1/boards/', async(req, res) => {
         }
         boardCount++;
         boards.push(newBoard);
-        console.log("Created a new board.");
-        res.status(200).send(newBoard);
+        res.status(201).send(newBoard);
 
     }else {
         return res.status(405).send('Name cannot be empty');
@@ -136,7 +135,7 @@ app.post('/api/v1/boards/', async(req, res) => {
 
 
 // update a board
-app.post('api/v1/boards/:boardId/', function(req, res) {
+app.post('/api/v1/boards/:boardId/', function(req, res) {
     let boardId = req.params.boardId;
 
     const name = req.body.name;
@@ -160,14 +159,14 @@ app.post('api/v1/boards/:boardId/', function(req, res) {
                 }
                 boards.splice(i, 1);
                 boards.push(updatedBoard);
-                return res.status(200).send(updatedBoard);
+                return res.status(201).send(updatedBoard);
             }
         }
         return res.status(404).send('Board '+ boardId +' not found.')
     }
 })
 
-// TODO delete a specific board
+
 app.delete('/api/v1/boards/:boardId/', function(req, res) {
     const boardId = req.params.boardId;
     const boardIndex = boards.findIndex(item => item.id === boardId);
@@ -184,33 +183,36 @@ app.delete('/api/v1/boards/:boardId/', function(req, res) {
 //getting the tasks assigned to a specific board
 app.get('/api/v1/boards/:boardId/tasks/', function(req, res) {
     let boardId = req.params.boardId;
+    let sort = req.query.sort;
     let resArray = [];
 
     let i;
     let j;
 
-    if (!req.query.sort) {
-        for (i=0; i<boards.length; i++) {
+
+    for (i=0; i<boards.length; i++) {
             if (boards[i].id === boardId) {
                 for (j=0; j<boards[i].tasks.length; j++) {
                     resArray.push(tasks[boards[i].tasks[j]]);
                 }
             }
-        }
     }
-    //TODO sort argument
-    // else if (req.query.sort === 'id') {
-    //     for (i=0; i<boards.length; i++) {
-    //     }
-    // }else if (req.query.sort === 'taskName') {
 
-    // } else if (req.query.sort === 'dateCreated') {
-
-    // }else {
-    //     return res.status(404).send('Unrecognized sorting argument. Check your query');
-    // }
-
-    return res.status(200).send(resArray)
+    if(!sort){
+        return res.status(200).send(resArray);
+    } else if (sort === 'id') {
+        const sorted = resArray.sort((a,b) => a.id > b.id);
+        return res.status(200).send(sorted);
+    } else if (sort === 'taskName') {
+         const sorted = resArray.sort((a,b) => ('' + a.taskName).localeCompare(b.taskName));
+         return res.status(200).send(sorted);
+         
+        } else if (sort === 'dateCreated') {
+         const sorted = resArray.sort((a,b) => a.dateCreated.getTime() - b.dateCreated.getTime());
+         return res.status(200).send(sorted);
+     }else {
+         return res.status(404).send('Unrecognized sorting argument. Check your query');
+    }
 })
 
 
@@ -239,9 +241,9 @@ app.get('/api/v1/boards/:boardId/tasks/:taskId/', function(req, res) {
 
 
 //post new tasks
-app.post('/boards/:boardId/tasks/', async(req, res) => {
+app.post('/api/v1/boards/:boardId/tasks/', (req, res) => {
     let boardId = req.params.boardId;
-    const taskName = await req.body.taskName
+    const taskName = req.body.taskName
 
     let i;
     for (i=0; i<boards.length; i++) {
@@ -259,36 +261,29 @@ app.post('/boards/:boardId/tasks/', async(req, res) => {
             boards[i].tasks.push(resJson.id);
             tasks.push(resJson);
             taskCount++;
-            console.log(boards[i].tasks);
-            console.log(tasks);
-            return res.sendStatus(200);
+            return res.status(201).send(resJson);
         }
     }
     return res.status(405).send('Bad Action');
 })
 
 //delete task //TODO ask if delete or archive is enough
-app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
+app.delete('/api/v1/boards/:boardId/tasks/:taskId', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
 
     let i;
     let j;
     for (i=0; i<boards.length; i++) {
-        console.log(typeof(boardId));
-        console.log(typeof(boards[i].id));
         if (boardId === boards[i].id) {
             for (j=0; j<boards[i].tasks.length; j++) {
                 if (taskId === boards[i].tasks[j]) {
                     boards[i].tasks = boards[i].tasks.splice(j,1);
-                    console.log("board tasks"+boards[i].tasks);
-
                     //archiving in tasks
                     let k;
                     for (k=0; k<tasks.length; k++) {
                         if (taskId === tasks[k].id) {
                             tasks[k].archived = true;
-                            console.log("tasks " + tasks);
                             return res.status(200).send(tasks[k])
                         }
                     }
@@ -303,7 +298,7 @@ app.delete('/boards/:boardId/tasks/:taskId', function(req, res) {
 })
 
 // update task
-app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
+app.patch('/api/v1/boards/:boardId/tasks/:taskId/', function (req, res) {
     //params
     const boardId = req.params.boardId;
     const taskId = req.params.taskId;
@@ -324,7 +319,6 @@ app.patch('/boards/:boardId/tasks/:taskId/', function (req, res) {
                         taskName = tasks[boards[i].tasks[j]].taskName;
                     }
                     if (taskBoardId === undefined) {
-                        console.log("hola");
                         taskBoardId = tasks[boards[i].tasks[j]].boardId;
                     }
                     if (archived === undefined) {
