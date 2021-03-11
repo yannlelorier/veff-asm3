@@ -166,7 +166,7 @@ app.post('/api/v1/boards/:boardId/', function(req, res) {
     }
 })
 
-
+//delete one board
 app.delete('/api/v1/boards/:boardId/', function(req, res) {
     const boardId = req.params.boardId;
     const boardIndex = boards.findIndex(item => item.id === boardId);
@@ -176,9 +176,18 @@ app.delete('/api/v1/boards/:boardId/', function(req, res) {
             boards.splice(boardIndex, 1);
             return res.status(200).send(boards);
         }
-      }
-      return res.status(405).send('Board contains tasks');
-    })
+    }
+    return res.status(405).send('Board contains tasks');
+})
+
+app.delete('/api/v1/boards/', function(req, res) {
+    for (let i=0; i<boards.length; i++) {
+        for (let j=0; j<boards[i].tasks.length; j++) {
+            tasks[boards[i].tasks[j]].archived = true;
+        }
+        boards[i].tasks = [];
+    }
+})
 
 //getting the tasks assigned to a specific board
 app.get('/api/v1/boards/:boardId/tasks/', function(req, res) {
@@ -267,7 +276,7 @@ app.post('/api/v1/boards/:boardId/tasks/', (req, res) => {
     return res.status(405).send('Bad Action');
 })
 
-//delete task //TODO ask if delete or archive is enough
+//delete task
 app.delete('/api/v1/boards/:boardId/tasks/:taskId', function(req, res) {
     let boardId = req.params.boardId;
     let taskId = req.params.taskId;
@@ -284,6 +293,7 @@ app.delete('/api/v1/boards/:boardId/tasks/:taskId', function(req, res) {
     boards[boardIndex].tasks.splice(taskId,1);
     tasks.splice(taskIndex,1);
     res.status(200).send(deletedTask);
+    
     
 })
 
