@@ -1,6 +1,6 @@
 # Vefforritun - Assignment 3
 
-## Boards
+## Boards Endpoints
 
 - [x] Read All boards
 - [x] Read an individual board
@@ -9,7 +9,7 @@
 - [x] Delete a board
 - [x] Delete all boards
 
-## Tasks
+## Tasks Endpoints
 
 - [x] Read all tasks + sort by id, taskName, dateCreated
 - [x] Read individual task
@@ -33,6 +33,10 @@
     - [x] The application shall be written as a Node.js application. A package.json file shall be part of the project, including also the required dependencies
     - [x] The application shall be started using the command node index.js
     - [x] The application is only permitted to use in-built modules of Node.js, as well as Express.js, body-parser, and cors 3
-    - [ ] The application shall additionally be deployed on Heroku. As a part of your hand-in, provide a text file that contains the URL of your deployed backend
+    - [x] The application shall additionally be deployed on Heroku. As a part of your hand-in, provide a text file that contains the URL of your deployed backend
     - [x] Persistence is not part of the assignment
     - [x] There are no restrictions on the ECMAScript (JavaScript) version
+
+## Deploy link
+
+The deploy link can be found here: [https://veff-assigment3.herokuapp.com/](https://veff-assigment3.herokuapp.com/)
